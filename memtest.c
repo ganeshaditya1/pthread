@@ -3,6 +3,6 @@
 
 void main()
 {
-	char*a = (char*)malloc(20);
-	printf("%c\n", a[0]);
+	malloc(20);
+	//printf("%c\n", a[0]);
 }
