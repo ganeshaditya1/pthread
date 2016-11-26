@@ -259,7 +259,32 @@ void* myallocate(int num_of_bytes, char* file_name, int line_number, int thread_
 }
 
 
-
+void handler(int sig, siginfo_t *si, void *unused)
+{
+	int thread_id = Gthread_id;
+	int frame = (int)(( (char*)si->si_addr - (memory_resource + pages_used_by_page_headers * page_size) )) / page_size;
+    
+    	int flag = 0;
+    	int i;
+	for (i = 0; i < num_of_page_headers; i++)
+	{
+		page_header* ptr = &((page_header*)memory_resource)[i];
+		if(ptr->is_allocated == 1 && ptr->thread_id == thread_id && ptr->thread_page_num == frame)
+		{
+                	swapPage(ptr->thread_page_num,frame);
+                	mprotect(memory_resource, page_size * num_of_pages, PROT_NONE);
+                	mprotect(getPageLocation(thread_id, frame), page_size, PROT_READ | PROT_WRITE);
+                	flag = 1;
+                	break;
+            	}
+		
+	}
+    	if(!flag)
+	{
+        	//printf("Got SIGSEGV at address: 0x%lx\n",(long) si->si_addr);
+        	exit(0);
+    	}
+}
 
 
 
