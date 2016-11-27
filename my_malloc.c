@@ -163,8 +163,8 @@ void my_malloc_init()
 void loadPage(int tid, int pageNo)
 {
     //protect pages
-    mprotect(startingAddressOfPages + pageNo*page_size, page_size, PROT_READ | PROT_WRITE);
-    protect_pages(tid);
+    //mprotect(startingAddressOfPages + pageNo*page_size, page_size, PROT_READ | PROT_WRITE);
+    //protect_pages(tid);
 
 	for (int i = 0; i < hddPageIndex; i++) 
     {
@@ -203,8 +203,8 @@ void loadPage(int tid, int pageNo)
     nodeHeader->next = NULL;
 
     //unprotect pages
-    mprotect(startingAddressOfPages + pageNo*page_size, page_size, PROT_NONE);
-    unprotect_pages(tid);
+    //mprotect(startingAddressOfPages + pageNo*page_size, page_size, PROT_NONE);
+    //unprotect_pages(tid);
 }
 
 bool canSatisfyRequirement(int size)
@@ -343,23 +343,22 @@ void mydeallocate(int thread_id, void* ptr)
 
 void protect_pages(int thread_id)
 {
-    printf("protect_pages %d\n", thread_id);
-    for (int i = 0; i < num_of_pages; i++)
-    {
-        page_header *ptr = &((page_header*)memory_resource)[i];
-        if (ptr -> thread_id == thread_id)
-            mprotect(startingAddressOfPages + i*page_size, page_size, PROT_NONE);    
-    }
-}
-
-void unprotect_pages(int thread_id)
-{
-    printf("unprotect_pages %d\n", thread_id);
-    for (int i = 0; i < num_of_pages; i++)
+    for (int i = 0; i < hddPageIndex; i++)
     {
         page_header *ptr = &((page_header*)memory_resource)[i];
         if (ptr -> thread_id == thread_id)
             mprotect(startingAddressOfPages + i*page_size, page_size, PROT_READ | PROT_WRITE);    
+    }
+    printf("Protecting done");
+}
+
+void unprotect_pages(int thread_id)
+{
+    for (int i = 0; i < hddPageIndex; i++)
+    {
+        page_header *ptr = &((page_header*)memory_resource)[i];
+        if (ptr -> thread_id == thread_id)
+            mprotect(startingAddressOfPages + i*page_size, page_size, PROT_NONE);    
     }
 }
 
@@ -382,6 +381,7 @@ void* getPageLocation(int tid, int pageNo)
 
 void handler(int sig, siginfo_t *si, void *unused)
 {
+    printf("HANDLER CALLED\n");
 	int thread_id = Gthread_id;
 	int frame = (int)(( (char*)si->si_addr - (memory_resource + pages_used_by_page_headers * page_size) )) / page_size;
     
