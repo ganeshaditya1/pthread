@@ -222,16 +222,18 @@ int reverseLookup(char* obj)
 
 void* allocateMemory(int thread_id, ptr_header* temp, int currentPageIndex, int size)
 {
-    char* currentPageStart = startingAddressOfPages + currentPageIndex * page_size;
-    int sizeLeft = (int)(((char*)(temp + 1)) - currentPageStart);
-    int sizeRequired = size - sizeLeft;
+    char* currentPageEnd = startingAddressOfPages + (currentPageIndex + 1) * page_size;
+    int sizeLeft = (int)(currentPageEnd - (char*)(temp + 1));
+    int sizeRequired = size - sizeLeft + sizeof(ptr_header);
     if(sizeRequired > 0)
     {    
+        printf("%d ASD\n", sizeRequired);
         int numberOfPagesRequired = (int)ceil(sizeRequired/(double)4096);
+        printf("%d ASD\n", numberOfPagesRequired);
         for(int i = numberOfPagesRequired; i > 0; i--)
         {
-            loadPage(thread_id, currentPageIndex + i);
-            currentPageIndex++;
+            loadPage(thread_id, ++currentPageIndex);
+            //currentPageIndex++;
         }
     }
     temp->free = 0;
@@ -247,7 +249,6 @@ void* allocateMemory(int thread_id, ptr_header* temp, int currentPageIndex, int 
     else
     {
         char* endOfCurrentBlock = (char*)(temp + 1) + size;
-        printf("%p, %p  AA\n", temp->next, endOfCurrentBlock);
         if(temp->next > endOfCurrentBlock)
         {
 
@@ -255,7 +256,6 @@ void* allocateMemory(int thread_id, ptr_header* temp, int currentPageIndex, int 
             temp2->next = temp->next;
             temp->next = temp2;
             temp2->size = ((char*)temp2->next - (char*)temp2) - sizeof(ptr_header);
-            printf("%x, %x, AAAA\n", temp2->next, temp2);
             temp2->free = 1;
         }
         
@@ -378,15 +378,28 @@ int main()
     ptr_header* to = (startingAddressOfPages + 1 * page_size + 200);
     to->free = 0;
     to->size = 600 - sizeof(ptr_header);
-    to->next = to2;
+    to->next = NULL;
 //void* allocateMemory(int thread_id, ptr_header* temp, int currentPageIndex, int size)
 
     printf("%d, %d, %p\n", to->free, to->size, to->next);
-    allocateMemory(2, to, 1, 484);
+    char *c = allocateMemory(2, to, 1, 10000);
     printf("%d, %d, %p\n", to->free, to->size, to->next);
+    ptr_header* YO = to;
     to = to->next;
 
     printf("%d, %d, %p\n", to->free, to->size, to->next);
+    printf("%p, %p\n", YO, c);
+    tempa = &((page_header*)memory_resource)[1];
+    printf("\n\nHEADER STUFF\n\n");
+    tempa = &((page_header*)memory_resource)[1];
+    printf("%d, %d, %d\n", tempa->is_allocated, tempa->thread_id, tempa->thread_page_num);
+
+    tempa = &((page_header*)memory_resource)[2];
+    printf("%d, %d, %d\n", tempa->is_allocated, tempa->thread_id, tempa->thread_page_num);
+    tempa = &((page_header*)memory_resource)[3];
+    printf("%d, %d, %d\n", tempa->is_allocated, tempa->thread_id, tempa->thread_page_num);
+    tempa = &((page_header*)memory_resource)[4];
+    printf("%d, %d, %d\n", tempa->is_allocated, tempa->thread_id, tempa->thread_page_num);
     return 0;
 }
 
