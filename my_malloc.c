@@ -134,11 +134,16 @@ void my_malloc_init()
 
 
     // Initialize the swap file.
-
-
 	swapFile = fopen("swap.txt", "rw");
-	fseek(swapFile, 16 * 1024 * 1024, SEEK_SET);
-	fputc('\0', swapFile);
+    if (swapFile != 0)
+    {
+        fseek(swapFile, 16 * 1024 * 1024 - 1, SEEK_SET);
+        fputc('\0', swapFile);
+        printf("swap file initialized\n\n");
+    }
+    else
+        perror("fopen");
+    
 
     //signal handler
     struct sigaction sa;
@@ -150,12 +155,17 @@ void my_malloc_init()
     {
         perror("sigaction");
     }
+    printf("signal handler registered\n\n");
 
     printf("Init finished\n\n\n");
 }
 
 void loadPage(int tid, int pageNo)
 {
+    //protect pages
+    mprotect(startingAddressOfPages + pageNo*page_size, page_size, PROT_READ | PROT_WRITE);
+    protect_pages(tid);
+
 	for (int i = 0; i < hddPageIndex; i++) 
     {
         page_header* ptr = &((page_header*)memory_resource)[i];
@@ -191,6 +201,10 @@ void loadPage(int tid, int pageNo)
     nodeHeader->free = 1;
     nodeHeader->size = 0;
     nodeHeader->next = NULL;
+
+    //unprotect pages
+    mprotect(startingAddressOfPages + pageNo*page_size, page_size, PROT_NONE);
+    unprotect_pages(tid);
 }
 
 bool canSatisfyRequirement(int size)
@@ -222,7 +236,6 @@ void swapPage(int slotNumber1, int slotNumber2)
 	page_header temp = headerArray[slotNumber1];
 	headerArray[slotNumber1] = headerArray[slotNumber2];
 	headerArray[slotNumber2] = temp;
-
 }
 
 
@@ -332,7 +345,7 @@ void protect_pages(int thread_id)
 {
     for (int i = 0; i < num_of_pages; i++)
     {
-        page_header *ptr = (page_header*)memory_resource[i];
+        page_header *ptr = &((page_header*)memory_resource)[i];
         if (ptr -> thread_id == thread_id)
             mprotect(startingAddressOfPages + i*page_size, page_size, PROT_NONE);    
     }
@@ -342,7 +355,7 @@ void unprotect_pages(int thread_id)
 {
     for (int i = 0; i < num_of_pages; i++)
     {
-        page_header *ptr = (page_header*)memory_resource[i];
+        page_header *ptr = &((page_header*)memory_resource)[i];
         if (ptr -> thread_id == thread_id)
             mprotect(startingAddressOfPages + i*page_size, page_size, PROT_READ | PROT_WRITE);    
     }
@@ -350,36 +363,49 @@ void unprotect_pages(int thread_id)
 
 
 
+void* getPageLocation(int tid, int pageNo)
+{
+    int i;
+    for (i = 0; i < hddPageIndex; i++) 
+    {
+        page_header* ptr = &((page_header*)memory_resource)[i];
+        if(ptr->is_allocated && ptr->thread_id == tid && ptr->thread_page_num == pageNo)
+        {
+            return startingAddressOfPages + i * page_size;
+        }
+    }
+    return getFreePageSlot();
+    // return NULL;
+}
 
-/*void handler(int sig, siginfo_t *si, void *unused)
 void handler(int sig, siginfo_t *si, void *unused)
 {
-	/*int thread_id = Gthread_id;
+	int thread_id = Gthread_id;
 	int frame = (int)(( (char*)si->si_addr - (memory_resource + pages_used_by_page_headers * page_size) )) / page_size;
     
-    	int flag = 0;
-    	int i;
+    int flag = 0;
+    int i;
 	for (i = 0; i < num_of_page_headers; i++)
 	{
 		page_header* ptr = &((page_header*)memory_resource)[i];
 		if(ptr->is_allocated == 1 && ptr->thread_id == thread_id && ptr->thread_page_num == frame)
 		{
-                	swapPage(ptr->thread_page_num,frame);
-                	mprotect(memory_resource, page_size * num_of_pages, PROT_NONE);
-                	mprotect(getPageLocation(thread_id, frame), page_size, PROT_READ | PROT_WRITE);
-                	flag = 1;
-                	break;
-            	}
+            swapPage(ptr->thread_page_num,frame);
+            mprotect(memory_resource, page_size * num_of_pages, PROT_NONE);
+            mprotect(getPageLocation(thread_id, frame), page_size, PROT_READ | PROT_WRITE);
+            flag = 1;
+            break;
+        }
 		
 	}
-    	if(!flag)
+    if(!flag)
 	{
-        	//printf("Got SIGSEGV at address: 0x%lx\n",(long) si->si_addr);
-        	exit(0);
-    	}
+        //printf("Got SIGSEGV at address: 0x%lx\n",(long) si->si_addr);
+        exit(0);
+    }
     printf("YOO\n");
 }
-*/
+
 
 
 
@@ -392,9 +418,27 @@ int main()
     *(test+1) = 'b';
     *(test+2) = 'c';
     *(test+4098) = 'r';
-    printf("test is: %p %c %c %c\n",test, *(test), *(test + 1), *(test + 4098));
+    printf("test is: %p %c %c %c %c\n",test, *(test), *(test + 1), *(test + 2), *(test + 4098));
+
+    char* test1 = myallocate(4093, __FILE__, __LINE__ , 1);
+    Gthread_id=1;
+    *(test1) = 'd';
+    *(test1+1) = 'e';
+    *(test1+2) = 'f';
+    printf("test is:%p %c %c %c\n", test1, *(test1), *(test1+1), *(test1+2));
+    
+    char* test2 = myallocate(3, __FILE__, __LINE__ , 2);
+    Gthread_id = 2;
+    *(test2) = 't';
+    *(test2+1) = 'u';
+    *(test2+2) = 'v';
+    printf("test is: %p %c %c %c\n",test2,*(test2),*(test2+1),*(test2+2));
     
     return 0;
+
+
+
+    
 	my_malloc_init();
     // Mprotect test code.
 

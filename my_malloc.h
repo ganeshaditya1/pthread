@@ -10,6 +10,12 @@ void* myallocate(int size, char* file_name, int line_number, int ThreadReq);
 //page_header* get_header_for_next_usable_page(int thread_id, int *num_of_bytes, int *old_offset);
 //page_header* get_last_header_for_current_thread(int thread_id);
 
+void protect_pages(int thread_id);
+
+void unprotect_pages(int thread_id);
+
+void handler(int sig, siginfo_t *si, void *unused);
+
 #endif
 
 
