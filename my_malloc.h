@@ -3,6 +3,7 @@
 #define my_malloc
 
 void* myallocate(int size, char* file_name, int line_number, int ThreadReq);
+void mydeallocate(int threadId, void* ptr);
 
 // No need to make these part of the public interface.
 

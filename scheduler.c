@@ -14,10 +14,25 @@
 #include "threadStructure.h"
 #include "queue.h"
 #include "context.h"
+#include "my_malloc.h"
+
 
 boolean initialized = false;
 boolean pauseAlarms = false;
 queueNode_t* currentlyExecuting = NULL;
+
+int getCurrentTid()
+{
+	if(currentlyExecuting == NULL)
+	{
+		// Too bad if you spawned 9999 threads before the main thread got swapped out.
+		return 9999;
+	}
+	else
+	{
+		return getThread(currentlyExecuting)->tid;
+	}
+}
 
 void timeSliceExpired ()
 {
@@ -59,6 +74,8 @@ void timeSliceExpired ()
 	setStatus(nextThread, RUNNING);
 	setStatus(currentThread, READY);
 	// Do the swaping.
+	protect_pages(currentThread->tid);
+	unprotect_pages(nextThread->tid);
 	swapcontext(currentThread->context, nextThread->context);
 }
 
@@ -118,7 +135,9 @@ void loadNewThread(int resheduleFlag)
  		setStatus(currentThread, FINISHED);	
  	}
  	my_pthread_t* nextThread = getThread(nextNodeToExecute);
- 	currentlyExecuting = nextNodeToExecute;		
+ 	currentlyExecuting = nextNodeToExecute;
+ 	/*unprotect_pages(nextThread->tid);
+ 	protect_pages(currentThread->tid);*/
  	swapcontext(currentThread->context, nextThread->context);
 }
 

@@ -7,5 +7,6 @@ void mySchedulerInit();
 void scheduleForExecution(my_pthread_t* thread);
 void abruptEnding();
 void yield();
+int getCurrentTid();
 
 #endif

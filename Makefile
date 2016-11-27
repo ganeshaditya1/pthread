@@ -1,5 +1,5 @@
 OBJDIR = build
-targets = timer queue scheduler my_pthread_t context threadStructure multiLevelQueue
+targets = timer queue scheduler my_pthread_t context threadStructure multiLevelQueue my_malloc
 properTargets = $(addsuffix .o, $(addprefix $(OBJDIR)/, $(targets)))
 
 .PHONY: dirs 
@@ -8,7 +8,9 @@ dirs:
 	mkdir $(OBJDIR)
 	make all
 all: $(targets)
-	gcc $(properTargets) demo.c -o $(OBJDIR)/demo
+	gcc $(properTargets) demo.c -o $(OBJDIR)/demo -lm
+my_malloc:
+	gcc -c $@.c -o $(OBJDIR)/$@.o
 timer:
 	gcc -c $@.c -o $(OBJDIR)/$@.o
 threadStructure:
