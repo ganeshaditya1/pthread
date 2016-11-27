@@ -40,6 +40,8 @@ char* startingAddressOfPages;
 
 FILE *swapFile;
 
+void swapPage(int slotNumber1, int slotNumber2);
+
 int getFreeDiskSlot()
 {
 	for (int i = num_of_pages; i < num_of_page_headers; i++) 
@@ -85,7 +87,7 @@ void evictPage()
 
 }
 
-int readPageFromDisk(char* buffer, int diskSlotNumber)
+int readPageFromDisk(int diskSlotNumber)
 {
 	int slotNumber = getFreePageSlot();
 	if(slotNumber == -1)
@@ -140,17 +142,43 @@ void my_malloc_init()
     printf("Init finished\n\n\n");
 }
 
-void* getPageLocation(int tid, int pageNo)
+void loadPage(int tid, int pageNo)
 {
 	for (int i = 0; i < hddPageIndex; i++) 
     {
         page_header* ptr = &((page_header*)memory_resource)[i];
         if(ptr->is_allocated && ptr->thread_id == tid && ptr->thread_page_num == pageNo)
         {
-        	return startingAddressOfPages + i * page_size;
+        	swapPage(i, pageNo);
+        	return;
         }
     }
-    return NULL;
+    for (int i = hddPageIndex; i < num_of_pages; i++) 
+    {
+        page_header* ptr = &((page_header*)memory_resource)[i];
+        if(ptr->is_allocated && ptr->thread_id == tid && ptr->thread_page_num == pageNo)
+        {
+        	int slotNumber = readPageFromDisk(i);
+        	swapPage(slotNumber, pageNo);
+        	return;
+        }
+    }
+
+    int slotNumber = getFreePageSlot();
+    if(slotNumber == -1)
+    {
+    	evictPage();
+    	slotNumber = getFreePageSlot();
+    }
+    swapPage(slotNumber, pageNo);
+    page_header* ptr = &((page_header*)memory_resource)[pageNo];
+    ptr->is_allocated = 1;
+    ptr->thread_id = tid;
+    ptr->thread_page_num = pageNo;
+    ptr_header* nodeHeader = (ptr_header*)(startingAddressOfPages + pageNo * page_size);
+    nodeHeader->free = 1;
+    nodeHeader->size = 0;
+    nodeHeader->next = NULL;
 }
 
 bool canSatisfyRequirement(int size)
@@ -185,7 +213,12 @@ void swapPage(int slotNumber1, int slotNumber2)
 
 }
 
-void swapPageDisk(){}
+
+
+int reverseLookup(char* obj)
+{
+	return ((int)(obj - startingAddressOfPages)) / page_size;
+}
 
 
 void* myallocate(int num_of_bytes, char* file_name, int line_number, int thread_id)
@@ -203,10 +236,10 @@ void* myallocate(int num_of_bytes, char* file_name, int line_number, int thread_
     }
 
     int currentPageIndex = 0;
-    void* currentPage = getPageLocation(thread_id, currentPageIndex);
+    loadPage(thread_id, currentPageIndex);
 
-    ptr_header* temp = (ptr_header*)currentPage;
-    /*while(temp->next != NULL)
+    ptr_header* temp = (ptr_header*)(startingAddressOfPages + currentPageIndex * page_size);
+    while(temp->next != NULL)
     {
     	if(temp->free && temp->size >= (sizeof(ptr_header) + num_of_bytes))
     	{
@@ -214,48 +247,25 @@ void* myallocate(int num_of_bytes, char* file_name, int line_number, int thread_
     	}
     	else
     	{
-    		if(temp->next - currentPage >= page_size)
+            int nextPageIndex = reverseLookup((char*)temp->next);
+    		if(nextPageIndex != currentPageIndex)
     		{
-    			currentPageIndex = (temp->next - startingAddressOfPages) / page_size;
+                loadPage(thread_id, nextPageIndex);
+                temp = temp->next;
+                currentPageIndex = nextPageIndex;
+    			/*currentPageIndex = (temp->next - startingAddressOfPages) / page_size;
     			currentPage = getPageLocation(thread_id, currentPageIndex);
-    			temp = (temp->next - (startingAddressOfPages  + currentPageIndex * page_size)) + currentPage;
+    			temp = (temp->next - (startingAddressOfPages  + currentPageIndex * page_size)) + currentPage;*/
     		}
     		else
     		{
     			temp = temp->next;
     		}
     	}
-    }*/
-
-
-    /*int size =  num_of_bytes;
-    
-    if(num_of_pages_req > remaining_pages)
-        return NULL;
-    
-    int first_page_found = -1;
-    page_header* ptr = NULL;
-    page_header* first_ptr = NULL;
-    void* page_ptr = NULL;
-    
-    while (size > 0) 
-    {
-        int old_offset = -1;
-        printf("get a header for page in which data will be written\n");
-        ptr = get_header_for_next_usable_page(thread_id, &size, &old_offset);
-        printf("got a header for page in which data will be written\n");
-        printf("first frame found? %d\n", first_page_found);
-        if(first_page_found == -1) 
-        {
-            first_ptr = ptr;
-            first_page_found = 1;
-            page_ptr = memory_resource + (pages_used_by_page_headers + first_ptr->thread_header_num)*page_size;
-            page_ptr += old_offset + 1;
-        }
-        
     }
-    //mprotect(memory_resource, num_of_pages * page_size, PROT_NONE);
-    return page_ptr;*/
+
+    // Allocate memory here as well.
+    
 }
 
 
@@ -291,101 +301,7 @@ void handler(int sig, siginfo_t *si, void *unused)
 int main() 
 {
 	my_malloc_init();
-	*(startingAddressOfPages + (total_usable_pages - 1) * page_size) = 'o';
-	page_header* ptr = &((page_header*)memory_resource)[total_usable_pages - 1];
-	ptr->is_allocated = 1;
-	ptr->thread_id = 200;
-	ptr->thread_page_num = 5;
-	printf("%d\n", getFreePageSlot());
-	//printf("%d\n", getFreeDiskSlot());
-	/* Testing evict page mechanism 
-
-	*(startingAddressOfPages + (total_usable_pages - 1) * page_size) = 'o';
-	page_header* ptr = &((page_header*)memory_resource)[total_usable_pages - 1];
-	ptr->is_allocated = 1;
-	ptr->thread_id = 200;
-	ptr->thread_page_num = 5;
-	evictPage();
-
-	page_header* ptr2 = &((page_header*)memory_resource)[hddPageIndex];
-	printf("%d, %d, %d, %d, %d\n", ptr2->is_allocated, ptr2->thread_id, ptr2->thread_page_num, hddPageIndex);
-	*/
-
-	/*Testing the disk file functions  
-
-	*(startingAddressOfPages + 90*page_size) = 'o';
-
-	*(startingAddressOfPages + 33*page_size) = 'p';
-
-	writePageToDisk(90, 0);
-	writePageToDisk(33, 1);
-	char* buffer = malloc(page_size);
-	readPageFromDisk(buffer, 0);
-	printf("%c\n", buffer[0]);
-	readPageFromDisk(buffer, 1);
-	printf("%c\n", buffer[0]);
-	*/
-
-	/* Testing swap Page function 
-	*(startingAddressOfPages + 90*page_size) = 'o';
-	page_header* ptr = &((page_header*)memory_resource)[90];
-	ptr->is_allocated = 1;
-	ptr->thread_id = 200;
-	ptr->thread_page_num = 5;
-
-	*(startingAddressOfPages + 33*page_size) = 'p';
-	page_header* ptr2 = &((page_header*)memory_resource)[33];
-	ptr2->is_allocated = 1;
-	ptr2->thread_id = 20;
-	ptr2->thread_page_num = 15;
-
-	printf("%c, %c\n", *(startingAddressOfPages + 90 * page_size), *(startingAddressOfPages + 33 * page_size));
-	swapPage(90, 33);
-	printf("%c, %c\n", *(startingAddressOfPages + 90 * page_size), *(startingAddressOfPages + 33 * page_size));
-
-	//printf("%d\n", getPageLocation(200, 5) == getPageLocation(20, 15));
-	printf("%c, %c\n", *((char*)getPageLocation(200, 5)), *((char*)getPageLocation(20, 15)));
-
-	*/
-	/**(startingAddressOfPages + 90*page_size) = 'o';
-	page_header* ptr = &((page_header*)memory_resource)[90];
-	ptr->is_allocated = 1;
-	ptr->thread_id = 200;
-	ptr->thread_page_num = 5;
-
-	printf("%c YO\n", *((char*)getPageLocation(200, 5)));*/
-
-	//printf("%d YO", canSatisfyRequirement(total_usable_pages);
-
-    //mprotectFunc(getPhyMem(),8388608,PROT_NONE);
-    // Not sure if we need this. Will uncomment this later.
-    //mprotect(memory_resource, 2048 * 4096, PROT_NONE);
-    /*char* test = myallocate(4099, __FILE__, __LINE__ , 1);
-    Gthread_id = 1;
-    *(test) = 'a';
-    *(test+1) = 'b';
-    *(test+2) = 'c';
-    *(test+4098) = 'r';*/
-    /*
-    printf("test is: %p %c%c%c\n",test,*(test),*(test+1),*(test+4098));
-    
-    char* test1 = myallocate(4093, __FILE__, __LINE__ , 1);
-    Gthread_id=1;
-    mprotect(memory_resource, 2048 * 4096, PROT_NONE);
-    //printf("test is: %p\n",test);
-    *(test1) = 'd';
-    *(test1+1) = 'e';
-    *(test1+2) = 'f';
-    printf("test is:%p %c%c%c\n",test1,*(test1),*(test1+1),*(test1+2));
-    
-    char* test2 = myallocate(3, __FILE__, __LINE__ , 2);
-    mprotect(memory_resource, 2048 * 4096, PROT_NONE);
-    Gthread_id = 2;
-    *(test2) = 't';
-    *(test2+1) = 'u';
-    *(test2+2) = 'v';
-    printf("test is: %p %c%c%c\n",test2,*(test2),*(test2+1),*(test2+2));
-    */
+	
     return 0;
 }
 
