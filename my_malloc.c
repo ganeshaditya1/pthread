@@ -220,6 +220,28 @@ int reverseLookup(char* obj)
 	return ((int)(obj - startingAddressOfPages)) / page_size;
 }
 
+void allocateMemory(int thread_id, ptr_header* temp, int currentPageIndex, int size)
+{
+    char* currentPageStart = startingAddressOfPages + currentPageIndex * page_size;
+    int sizeLeft = (int)(((char*)(ptr_header + 1)) - currentPageStart);
+    int sizeRequired = size - sizeLeft;
+    if(sizeRequired > 0)
+    {    
+        int numberOfPagesRequired = (int)ceil(sizeRequired/(double)4096);
+        for(int i = numberOfPagesRequired; i > 0; i--)
+        {
+            loadPage(thread_id, currentPageIndex + i);
+            currentPageIndex++;
+        }
+    }
+    temp->free = 0;
+    temp->size = size;
+    ptr_header* temp2 = temp->next;
+    temp->next = (ptr_header*)((char*)(ptr_header + 1) + size);
+    temp->next->next = temp2;
+
+}
+
 
 void* myallocate(int num_of_bytes, char* file_name, int line_number, int thread_id)
 {
@@ -239,11 +261,11 @@ void* myallocate(int num_of_bytes, char* file_name, int line_number, int thread_
     loadPage(thread_id, currentPageIndex);
 
     ptr_header* temp = (ptr_header*)(startingAddressOfPages + currentPageIndex * page_size);
-    while(temp->next != NULL)
+    while(true)
     {
-    	if(temp->free && temp->size >= (sizeof(ptr_header) + num_of_bytes))
+    	if((temp->free && temp->size >= (sizeof(ptr_header) + num_of_bytes)) || temp->next == NULL)
     	{
-    		//allocate memory here itself
+            return allocateMemory(thread_id, temp, currentPageIndex, size);
     	}
     	else
     	{
@@ -264,7 +286,6 @@ void* myallocate(int num_of_bytes, char* file_name, int line_number, int thread_
     	}
     }
 
-    // Allocate memory here as well.
     
 }
 
