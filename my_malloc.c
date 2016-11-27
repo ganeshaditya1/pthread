@@ -71,7 +71,7 @@ int getFreePageSlot()
 void evictPage()
 {
 	int freeDiskSpace, diskSlotNumber = getFreeDiskSlot(), slotNumber = total_usable_pages - 1;
-	printf("%d, %d\n", diskSlotNumber + num_of_pages, slotNumber);
+	//printf("%d, %d\n", diskSlotNumber + num_of_pages, slotNumber);
 	if(diskSlotNumber == -1)
 	{
 		return;
@@ -227,9 +227,7 @@ void* allocateMemory(int thread_id, ptr_header* temp, int currentPageIndex, int 
     int sizeRequired = size - sizeLeft + sizeof(ptr_header);
     if(sizeRequired > 0)
     {    
-        printf("%d ASD\n", sizeRequired);
         int numberOfPagesRequired = (int)ceil(sizeRequired/(double)4096);
-        printf("%d ASD\n", numberOfPagesRequired);
         for(int i = numberOfPagesRequired; i > 0; i--)
         {
             loadPage(thread_id, ++currentPageIndex);
@@ -237,7 +235,7 @@ void* allocateMemory(int thread_id, ptr_header* temp, int currentPageIndex, int 
         }
     }
     temp->free = 0;
-    temp->size = size - sizeof(ptr_header);
+    temp->size = size;
     if(temp->next == NULL)
     {
         temp->next = (ptr_header*)((char*)(temp + 1) + size);
@@ -249,7 +247,7 @@ void* allocateMemory(int thread_id, ptr_header* temp, int currentPageIndex, int 
     else
     {
         char* endOfCurrentBlock = (char*)(temp + 1) + size;
-        if((char*)temp->next > endOfCurrentBlock)
+        if((char*)temp->next > endOfCurrentBlock + sizeof(ptr_header))
         {
 
             ptr_header* temp2 = (ptr_header*)((char*)(temp + 1) + size);
@@ -285,7 +283,7 @@ void* myallocate(int num_of_bytes, char* file_name, int line_number, int thread_
     ptr_header* temp = (ptr_header*)(startingAddressOfPages + currentPageIndex * page_size);
     while(true)
     {
-    	if((temp->free && temp->size >= (sizeof(ptr_header) + num_of_bytes)) || temp->next == NULL)
+    	if((temp->free && temp->size >= (num_of_bytes)) || temp->next == NULL)
     	{
             return allocateMemory(thread_id, temp, currentPageIndex, num_of_bytes);
     	}
@@ -309,6 +307,13 @@ void* myallocate(int num_of_bytes, char* file_name, int line_number, int thread_
     }
 
     
+}
+
+void mydeallocate(int thread_id, void* ptr)
+{
+    loadPage(thread_id, reverseLookup(ptr));
+    ptr_header* temp = (ptr_header*)ptr - 1;
+    temp->free = 1;
 }
 
 
@@ -403,11 +408,16 @@ int main()
     tempa = &((page_header*)memory_resource)[4];
     printf("%d, %d, %d\n", tempa->is_allocated, tempa->thread_id, tempa->thread_page_num);*/
 
-    // Myallocate function test code.
-    /*char *a = myallocate(200, 0, 0, 1), *b = myallocate(400, 0, 0, 1);
-    printf("%p, %p\n", a, b);
+    // Myallocate + Mydellocate function test code.
+    /*char *a = myallocate(200, 0, 0, 1), *b = myallocate(400, 0, 0, 1), *e = myallocate(700, 0, 0, 1);
+    printf("%p, %p, %p\n", a, b, e);
     char *c = myallocate(30000, 0, 0, 2), *d = myallocate(500, 0, 0, 2);
-    printf("%p %p\n", c, d);*/
+    printf("%p %p\n", c, d);
+
+    mydeallocate(1, b);
+    b = myallocate(400, 0, 0, 1);
+    printf("%p, %p, %p\n", a, b, e);*/
+
     return 0;
 }
 
