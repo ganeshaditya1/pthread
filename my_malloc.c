@@ -339,6 +339,10 @@ void mydeallocate(int thread_id, void* ptr)
     loadPage(thread_id, reverseLookup(ptr));
     ptr_header* temp = (ptr_header*)ptr - 1;
     temp->free = 1;
+    if (temp == startingAddressOfPages + page_size*reverseLookup(ptr))
+    {
+        &((page_header*)memory_resource)[reverseLookup(ptr)] -> is_allocated = 0;
+    }
 }
 
 void protect_pages(int thread_id)
