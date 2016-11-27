@@ -41,6 +41,7 @@ char* startingAddressOfPages;
 FILE *swapFile;
 
 void swapPage(int slotNumber1, int slotNumber2);
+void handler(int sig, siginfo_t *si, void *unused);
 
 int getFreeDiskSlot()
 {
@@ -138,6 +139,17 @@ void my_malloc_init()
 	swapFile = fopen("swap.txt", "rw");
 	fseek(swapFile, 16 * 1024 * 1024, SEEK_SET);
 	fputc('\0', swapFile);
+
+    //signal handler
+    struct sigaction sa;
+
+    sa.sa_flags = SA_SIGINFO;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_sigaction = handler;
+    if (sigaction(SIGSEGV, &sa, NULL) == -1)
+    {
+        perror("sigaction");
+    }
 
     printf("Init finished\n\n\n");
 }
@@ -317,9 +329,9 @@ void mydeallocate(int thread_id, void* ptr)
 }
 
 
-/*void handler(int sig, siginfo_t *si, void *unused)
+void handler(int sig, siginfo_t *si, void *unused)
 {
-	int thread_id = Gthread_id;
+	/*int thread_id = Gthread_id;
 	int frame = (int)(( (char*)si->si_addr - (memory_resource + pages_used_by_page_headers * page_size) )) / page_size;
     
     	int flag = 0;
@@ -341,14 +353,23 @@ void mydeallocate(int thread_id, void* ptr)
 	{
         	//printf("Got SIGSEGV at address: 0x%lx\n",(long) si->si_addr);
         	exit(0);
-    	}
-}*/
+    	}*/
+    printf("YOO\n");
+}
 
 
 
 int main() 
 {
 	my_malloc_init();
+    // Mprotect test code.
+
+
+    if (mprotect(startingAddressOfPages, page_size, PROT_READ) == -1)
+               perror("mprotect");
+
+    startingAddressOfPages[1] = 'a';
+
 
     //Load page test code.
 
