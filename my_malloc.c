@@ -220,10 +220,10 @@ int reverseLookup(char* obj)
 	return ((int)(obj - startingAddressOfPages)) / page_size;
 }
 
-void allocateMemory(int thread_id, ptr_header* temp, int currentPageIndex, int size)
+void* allocateMemory(int thread_id, ptr_header* temp, int currentPageIndex, int size)
 {
     char* currentPageStart = startingAddressOfPages + currentPageIndex * page_size;
-    int sizeLeft = (int)(((char*)(ptr_header + 1)) - currentPageStart);
+    int sizeLeft = (int)(((char*)(temp + 1)) - currentPageStart);
     int sizeRequired = size - sizeLeft;
     if(sizeRequired > 0)
     {    
@@ -235,10 +235,32 @@ void allocateMemory(int thread_id, ptr_header* temp, int currentPageIndex, int s
         }
     }
     temp->free = 0;
-    temp->size = size;
-    ptr_header* temp2 = temp->next;
-    temp->next = (ptr_header*)((char*)(ptr_header + 1) + size);
-    temp->next->next = temp2;
+    temp->size = size - sizeof(ptr_header);
+    if(temp->next == NULL)
+    {
+        temp->next = (ptr_header*)((char*)(temp + 1) + size);
+        ptr_header* temp2 = temp->next;
+        temp2->free = 1;
+        temp2->size = 0;
+        temp2->next = NULL;
+    }
+    else
+    {
+        char* endOfCurrentBlock = (char*)(temp + 1) + size;
+        printf("%p, %p  AA\n", temp->next, endOfCurrentBlock);
+        if(temp->next > endOfCurrentBlock)
+        {
+
+            ptr_header* temp2 = (ptr_header*)((char*)(temp + 1) + size);
+            temp2->next = temp->next;
+            temp->next = temp2;
+            temp2->size = ((char*)temp2->next - (char*)temp2) - sizeof(ptr_header);
+            printf("%x, %x, AAAA\n", temp2->next, temp2);
+            temp2->free = 1;
+        }
+        
+    }
+    return (char*)(temp + 1);
 
 }
 
@@ -265,7 +287,7 @@ void* myallocate(int num_of_bytes, char* file_name, int line_number, int thread_
     {
     	if((temp->free && temp->size >= (sizeof(ptr_header) + num_of_bytes)) || temp->next == NULL)
     	{
-            return allocateMemory(thread_id, temp, currentPageIndex, size);
+            return allocateMemory(thread_id, temp, currentPageIndex, num_of_bytes);
     	}
     	else
     	{
@@ -290,7 +312,7 @@ void* myallocate(int num_of_bytes, char* file_name, int line_number, int thread_
 }
 
 
-void handler(int sig, siginfo_t *si, void *unused)
+/*void handler(int sig, siginfo_t *si, void *unused)
 {
 	int thread_id = Gthread_id;
 	int frame = (int)(( (char*)si->si_addr - (memory_resource + pages_used_by_page_headers * page_size) )) / page_size;
@@ -315,14 +337,56 @@ void handler(int sig, siginfo_t *si, void *unused)
         	//printf("Got SIGSEGV at address: 0x%lx\n",(long) si->si_addr);
         	exit(0);
     	}
-}
+}*/
 
 
 
 int main() 
 {
 	my_malloc_init();
+
+    //Load page test code.
+
+    /*page_header *tempa = &((page_header*)memory_resource)[105];
+    tempa->is_allocated = 1;
+    tempa->thread_id = 99;
+    tempa->thread_page_num = 101;
+
+    ptr_header* to = (startingAddressOfPages + 105 * page_size);
+    to->free = 1;
+    to->size = 88;
+    to->next = NULL;
+
+    printf("%d, %d, %d\n", to->free, to->size, to->next);
 	
+    loadPage(99, 101);
+    page_header* temp = &((page_header*)memory_resource)[101];
+    printf("%d, %d, %d\n", temp->is_allocated, temp->thread_id, temp->thread_page_num);
+    to = (startingAddressOfPages + 101 * page_size);
+    printf("%d, %d, %d\n", to->free, to->size, to->next);
+*/
+    page_header *tempa = &((page_header*)memory_resource)[1];
+    tempa->is_allocated = 1;
+    tempa->thread_id = 2;
+    tempa->thread_page_num = 1;
+    
+    ptr_header* to2 = (startingAddressOfPages + 1 * page_size + 700);
+    to2->free = 1;
+    to2->size = 200;
+    to2->next = NULL;
+
+    ptr_header* to = (startingAddressOfPages + 1 * page_size + 200);
+    to->free = 0;
+    to->size = 600 - sizeof(ptr_header);
+    to->next = to2;
+//void* allocateMemory(int thread_id, ptr_header* temp, int currentPageIndex, int size)
+
+    printf("%d, %d, %p\n", to->free, to->size, to->next);
+    allocateMemory(2, to, 1, 484);
+    printf("%d, %d, %p\n", to->free, to->size, to->next);
+    to = to->next;
+
+    printf("%d, %d, %p\n", to->free, to->size, to->next);
     return 0;
 }
 
