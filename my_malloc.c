@@ -116,7 +116,7 @@ void my_malloc_init()
     printf("total usable pages: %d\n", total_usable_pages);
     remaining_pages = total_usable_pages;
     
-    posix_memalign(&memory_resource, 4096, num_of_pages*page_size);
+    posix_memalign((void*)&memory_resource, 4096, num_of_pages*page_size);
     
     printf("Physical memory starts from %p\n", memory_resource);
     startingAddressOfPages = memory_resource + (pages_used_by_page_headers * page_size);
