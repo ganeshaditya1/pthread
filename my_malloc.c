@@ -249,7 +249,7 @@ void* allocateMemory(int thread_id, ptr_header* temp, int currentPageIndex, int 
     else
     {
         char* endOfCurrentBlock = (char*)(temp + 1) + size;
-        if(temp->next > endOfCurrentBlock)
+        if((char*)temp->next > endOfCurrentBlock)
         {
 
             ptr_header* temp2 = (ptr_header*)((char*)(temp + 1) + size);
@@ -365,7 +365,9 @@ int main()
     to = (startingAddressOfPages + 101 * page_size);
     printf("%d, %d, %d\n", to->free, to->size, to->next);
 */
-    page_header *tempa = &((page_header*)memory_resource)[1];
+
+    // AllocateMemory function tests.
+    /*page_header *tempa = &((page_header*)memory_resource)[1];
     tempa->is_allocated = 1;
     tempa->thread_id = 2;
     tempa->thread_page_num = 1;
@@ -399,7 +401,13 @@ int main()
     tempa = &((page_header*)memory_resource)[3];
     printf("%d, %d, %d\n", tempa->is_allocated, tempa->thread_id, tempa->thread_page_num);
     tempa = &((page_header*)memory_resource)[4];
-    printf("%d, %d, %d\n", tempa->is_allocated, tempa->thread_id, tempa->thread_page_num);
+    printf("%d, %d, %d\n", tempa->is_allocated, tempa->thread_id, tempa->thread_page_num);*/
+
+    // Myallocate function test code.
+    /*char *a = myallocate(200, 0, 0, 1), *b = myallocate(400, 0, 0, 1);
+    printf("%p, %p\n", a, b);
+    char *c = myallocate(30000, 0, 0, 2), *d = myallocate(500, 0, 0, 2);
+    printf("%p %p\n", c, d);*/
     return 0;
 }
 
