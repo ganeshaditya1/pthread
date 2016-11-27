@@ -343,7 +343,16 @@ void* myallocate(int num_of_bytes, char* file_name, int line_number, int thread_
 
 int main() 
 {
-	my_malloc_init();
+	//my_malloc_init();
+    char *test = myallocate(4099, __FILE__, __LINE__ , 1);
+    Gthread_id = 1;
+    *(test) = 'a';
+    *(test+1) = 'b';
+    *(test+2) = 'c';
+    *(test+4098) = 'r';
+    printf("test is: %p %c %c %c\n",test, *(test), *(test + 1), *(test + 4098));
+    
+    return 0;
 
     //Load page test code.
 
