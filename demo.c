@@ -7,8 +7,6 @@
 
 void* func(void * value) 
 {
-	int v = (int)value;
-	printf("Value Recieved2: %d\n", v);
 	//my_pthread_yield();
 	printf("%d getCurrentTid\n", getCurrentTid());
 	char *a = malloc(400);
@@ -22,6 +20,8 @@ void* func2(void * value)
 {
 	printf("%d getCurrentTid\n", getCurrentTid());
 	char *a = malloc(400);
+	free(a);
+	a = malloc(400);
 	a[2] = 'd';
 	while(1){
 		printf("%c THREAD: %d\n", a[2], getCurrentTid());
@@ -29,17 +29,15 @@ void* func2(void * value)
 }
 
 
-void* func3(void * value) 
+/*void* func3(void * value) 
 {
 	printf("%d getCurrentTid\n", getCurrentTid());
 	char *a = malloc(400);
-	free(a);
-	a = malloc(400);
 	a[2] = 'e';
 	while(1){
 		printf("%c THREAD: %d\n", a[2], getCurrentTid());
 	}	
-}
+}*/
 
 void* func4(void * value) 
 {
@@ -55,7 +53,7 @@ int main()
 {	
 	printf("Main initialized\n");
 	my_pthread_t t1, t2, t3, t4, t5,t6,t7;
-	my_pthread_create(&t1,NULL, &func, (void*)7);
+	my_pthread_create(&t1,NULL, &func, NULL);
 	my_pthread_create(&t2,NULL, &func2, NULL);
 	//my_pthread_create(&t3,NULL, &func3, NULL);
 	my_pthread_create(&t4,NULL, &func4, NULL);

@@ -8,7 +8,7 @@
 #include "scheduler.h"
 
 
-char *memory_resource;
+char *memory_resource, *buffer;
 
 typedef struct {
     int is_allocated;
@@ -133,6 +133,7 @@ void my_malloc_init()
     }
     hddPageIndex = num_of_pages;
 
+    buffer = (char*)calloc(1, page_size);
 
     // Initialize the swap file.
 	swapFile = fopen("swap.txt", "rw");
@@ -175,7 +176,8 @@ void loadPage(int tid, int pageNo)
         {
             mprotect(startingAddressOfPages + i*page_size, page_size, PROT_READ | PROT_WRITE);
         	swapPage(i, pageNo);
-            mprotect(startingAddressOfPages + i*page_size, page_size, PROT_NONE);
+            if(i != pageNo)
+                mprotect(startingAddressOfPages + i*page_size, page_size, PROT_NONE);
         	return;
         }
     }
@@ -187,7 +189,8 @@ void loadPage(int tid, int pageNo)
         	int slotNumber = readPageFromDisk(i);
             mprotect(startingAddressOfPages + slotNumber*page_size, page_size, PROT_READ | PROT_WRITE);
         	swapPage(slotNumber, pageNo);
-            mprotect(startingAddressOfPages + slotNumber*page_size, page_size, PROT_NONE);
+            if(i != pageNo)
+                mprotect(startingAddressOfPages + i*page_size, page_size, PROT_NONE);
         	return;
         }
     }
@@ -236,7 +239,7 @@ boolean canSatisfyRequirement(int size)
 
 void swapPage(int slotNumber1, int slotNumber2)
 {
-	char* buffer = (char*)calloc(1, page_size);
+	
 	memcpy(buffer, startingAddressOfPages + slotNumber1 * page_size, page_size);
 	memcpy(startingAddressOfPages + slotNumber1 * page_size, startingAddressOfPages + slotNumber2 * page_size, page_size);
 	memcpy(startingAddressOfPages + slotNumber2 * page_size, buffer, page_size);
@@ -399,7 +402,7 @@ void handler(int sig, siginfo_t *si, void *unused)
     int slotNumber = reverseLookup(addressAccessed);
     mprotect(startingAddressOfPages + slotNumber * page_size, page_size, PROT_READ | PROT_WRITE);
     int currentSlotNumber = getPageLocation(thread_id, slotNumber);
-    printf("%d, %d, %d slots\n", thread_id, slotNumber, currentSlotNumber);
+    printf("\n%d, %p, %p, %d, %d %d slots\n", thread_id, startingAddressOfPages, addressAccessed, slotNumber, currentSlotNumber, si->si_errno);
     mprotect(startingAddressOfPages + slotNumber * page_size, page_size, PROT_READ | PROT_WRITE);    
     swapPage(slotNumber, currentSlotNumber);
     mprotect(startingAddressOfPages + currentSlotNumber * page_size, page_size, PROT_NONE);
