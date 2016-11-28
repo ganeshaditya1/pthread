@@ -29,7 +29,7 @@ void* func2(void * value)
 }
 
 
-/*void* func3(void * value) 
+void* func3(void * value) 
 {
 	printf("%d getCurrentTid\n", getCurrentTid());
 	char *a = malloc(400);
@@ -37,14 +37,15 @@ void* func2(void * value)
 	while(1){
 		printf("%c THREAD: %d\n", a[2], getCurrentTid());
 	}	
-}*/
+}
 
 void* func4(void * value) 
 {
 	printf("%d getCurrentTid\n", getCurrentTid());
-	char *a = malloc(40000);
+	char *a = malloc(4096*2029);
+	char *b = malloc(4096*20);
 	a[2] = 'f';
-	a[7000] = 'g';
+	b[35000] = 'g';
 	while(1){
 		printf("(%c, %c) THREAD: %d\n", a[2], a[7000], getCurrentTid());
 	}	
