@@ -35,13 +35,22 @@ void* func3(void * value)
 	char *a = malloc(400);
 	free(a);
 	a = malloc(400);
-	a[2] = 'd';
+	a[2] = 'e';
 	while(1){
-		printf("%c THREAD: %d", a[2], getCurrentTid());
+		printf("%c THREAD: %d\n", a[2], getCurrentTid());
 	}	
 }
 
-
+void* func4(void * value) 
+{
+	printf("%d getCurrentTid\n", getCurrentTid());
+	char *a = malloc(40000);
+	a[2] = 'f';
+	a[7000] = 'g';
+	while(1){
+		printf("(%c, %c) THREAD: %d\n", a[2], a[7000], getCurrentTid());
+	}	
+}
 int main()
 {	
 	printf("Main initialized\n");
@@ -49,6 +58,7 @@ int main()
 	my_pthread_create(&t1,NULL, &func, (void*)7);
 	my_pthread_create(&t2,NULL, &func2, NULL);
 	//my_pthread_create(&t3,NULL, &func3, NULL);
+	my_pthread_create(&t4,NULL, &func4, NULL);
 
 	while(1)
 	{
