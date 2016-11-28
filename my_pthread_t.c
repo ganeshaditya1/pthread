@@ -51,7 +51,7 @@ int my_pthread_join(my_pthread_t thread, void ** value_ptr)
 
 int my_pthread_mutex_init(my_pthread_mutex_t* mutex,const my_pthread_mutexattr_t* mutex_attr)
 {
-	mutex = (my_pthread_mutex_t*)malloc(sizeof(my_pthread_mutex_t));
+	mutex = (my_pthread_mutex_t*)calloc(1, sizeof(my_pthread_mutex_t));
 	mutex->mutex = 0; //initialized
 	mutex->mutexattr_t = mutex_attr; //making mutex attributes to be the attributes passed
 	return 1;

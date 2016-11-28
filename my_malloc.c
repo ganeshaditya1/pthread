@@ -231,7 +231,7 @@ boolean canSatisfyRequirement(int size)
 
 void swapPage(int slotNumber1, int slotNumber2)
 {
-	char* buffer = (char*)malloc(page_size);
+	char* buffer = (char*)calloc(1, page_size);
 	memcpy(buffer, startingAddressOfPages + slotNumber1 * page_size, page_size);
 	memcpy(startingAddressOfPages + slotNumber1 * page_size, startingAddressOfPages + slotNumber2 * page_size, page_size);
 	memcpy(startingAddressOfPages + slotNumber2 * page_size, buffer, page_size);
@@ -340,7 +340,7 @@ void* myallocate(int num_of_bytes, char* file_name, int line_number, int thread)
     
 }
 
-void mydeallocate(int thread, void* ptr)
+void mydeallocate(void* ptr, char* file_name, int line_number, int ThreadReq)
 {
     int thread_id = getCurrentTid();
     loadPage(thread_id, reverseLookup(ptr));
@@ -391,7 +391,7 @@ void handler(int sig, siginfo_t *si, void *unused)
     int slotNumber = reverseLookup(addressAccessed);
     mprotect(startingAddressOfPages + slotNumber * page_size, page_size, PROT_READ | PROT_WRITE);
     int currentSlotNumber = getPageLocation(thread_id, slotNumber);
-    //printf("%d, %d, %d slots\n", thread_id, slotNumber, currentSlotNumber);
+    printf("%d, %d, %d slots\n", thread_id, slotNumber, currentSlotNumber);
     mprotect(startingAddressOfPages + slotNumber * page_size, page_size, PROT_READ | PROT_WRITE);    
     swapPage(slotNumber, currentSlotNumber);
     mprotect(startingAddressOfPages + currentSlotNumber * page_size, page_size, PROT_NONE);

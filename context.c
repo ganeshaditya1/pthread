@@ -16,9 +16,9 @@ void * wrapper(void *(*function)(void*), void* arg)
 
 ucontext_t* makeContext(void *(*function)(void*), void* arg)
 {
-	ucontext_t * newContext = (ucontext_t*)malloc(sizeof(ucontext_t));
+	ucontext_t * newContext = (ucontext_t*)calloc(1, sizeof(ucontext_t));
 	newContext->uc_link = 0;
-	newContext->uc_stack.ss_sp = malloc(STACKSIZE);
+	newContext->uc_stack.ss_sp = calloc(1, STACKSIZE);
 	newContext->uc_stack.ss_size = STACKSIZE;
 	newContext->uc_stack.ss_flags = 0;
 	getcontext(newContext);
@@ -29,9 +29,9 @@ ucontext_t* makeContext(void *(*function)(void*), void* arg)
 
 ucontext_t* makeEmptyContext()
 {
-	ucontext_t * currentContext = (ucontext_t*)malloc(sizeof(ucontext_t));
+	ucontext_t * currentContext = (ucontext_t*)calloc(1, sizeof(ucontext_t));
 	currentContext->uc_link = 0;
-	currentContext->uc_stack.ss_sp = malloc(STACKSIZE);
+	currentContext->uc_stack.ss_sp = calloc(1, STACKSIZE);
 	currentContext->uc_stack.ss_size = STACKSIZE;
 	currentContext->uc_stack.ss_flags = 0;
 	return currentContext;

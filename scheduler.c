@@ -57,7 +57,7 @@ void timeSliceExpired ()
  	boolean newlyCreated = false; 	
  	if(currentlyExecuting == NULL)
 	{
-		my_pthread_t* currentThread = (my_pthread_t *)malloc(sizeof(my_pthread_t));
+		my_pthread_t* currentThread = (my_pthread_t *)calloc(1, sizeof(my_pthread_t));
 		populateThread(currentThread, makeEmptyContext());
 		currentlyExecuting = createNode(currentThread);
 		newlyCreated = true;

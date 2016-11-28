@@ -3,7 +3,7 @@
 #define my_malloc
 
 void* myallocate(int size, char* file_name, int line_number, int ThreadReq);
-void mydeallocate(int threadId, void* ptr);
+void mydeallocate(void* ptr, char* file_name, int line_number, int ThreadReq);
 
 // No need to make these part of the public interface.
 
@@ -16,6 +16,9 @@ void protect_pages(int thread_id);
 void unprotect_pages(int thread_id);
 
 void handler(int sig, siginfo_t *si, void *unused);
+
+#define malloc(x) myallocate(x, __FILE__, __LINE__, 1)
+#define free(x) mydeallocate(x, __FILE__, __LINE__, 1)
 
 #endif
 

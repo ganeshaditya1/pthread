@@ -81,7 +81,7 @@ queueNode_t* deque(queue_t* q)
 queueNode_t* createNode(void* thread)
 {
 	queueNode_t* node = NULL;
-	node = (queueNode_t*)malloc(sizeof(queueNode_t));
+	node = (queueNode_t*)calloc(1, sizeof(queueNode_t));
 
 	if(!node)
 		return NULL;
