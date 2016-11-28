@@ -2,10 +2,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-#include <stdbool.h>
 #include <signal.h>
 #include <sys/mman.h>
 #include "my_malloc.h"
+#include "scheduler.h"
 
 
 char *memory_resource;
@@ -27,14 +27,13 @@ const int num_of_pages = (8 * 1024 * 1024) / 4096;
 
 
 
-int Gthread_id = 0;
 
 int num_of_page_headers;
 int page_headers_per_page;
 int pages_used_by_page_headers;
 int total_usable_pages;
 int remaining_pages;
-bool initialize = false;
+boolean initialize = false;
 int hddPageIndex;
 char* startingAddressOfPages;
 
@@ -163,8 +162,9 @@ void my_malloc_init()
 void loadPage(int tid, int pageNo)
 {
     //protect pages
-    //mprotect(startingAddressOfPages + pageNo*page_size, page_size, PROT_READ | PROT_WRITE);
+    mprotect(startingAddressOfPages + pageNo*page_size, page_size, PROT_READ | PROT_WRITE);
     //protect_pages(tid);
+
 
 	for (int i = 0; i < hddPageIndex; i++) 
     {
@@ -172,6 +172,7 @@ void loadPage(int tid, int pageNo)
         if(ptr->is_allocated && ptr->thread_id == tid && ptr->thread_page_num == pageNo)
         {
         	swapPage(i, pageNo);
+            mprotect(startingAddressOfPages + i*page_size, page_size, PROT_NONE);
         	return;
         }
     }
@@ -182,6 +183,7 @@ void loadPage(int tid, int pageNo)
         {
         	int slotNumber = readPageFromDisk(i);
         	swapPage(slotNumber, pageNo);
+            mprotect(startingAddressOfPages + slotNumber*page_size, page_size, PROT_NONE);
         	return;
         }
     }
@@ -192,7 +194,9 @@ void loadPage(int tid, int pageNo)
     	evictPage();
     	slotNumber = getFreePageSlot();
     }
+
     swapPage(slotNumber, pageNo);
+    mprotect(startingAddressOfPages + slotNumber*page_size, page_size, PROT_NONE);
     page_header* ptr = &((page_header*)memory_resource)[pageNo];
     ptr->is_allocated = 1;
     ptr->thread_id = tid;
@@ -207,7 +211,7 @@ void loadPage(int tid, int pageNo)
     //unprotect_pages(tid);
 }
 
-bool canSatisfyRequirement(int size)
+boolean canSatisfyRequirement(int size)
 {
 	for (int i = 0; i < num_of_page_headers; i++) 
     {
@@ -288,8 +292,10 @@ void* allocateMemory(int thread_id, ptr_header* temp, int currentPageIndex, int 
 }
 
 
-void* myallocate(int num_of_bytes, char* file_name, int line_number, int thread_id)
+void* myallocate(int num_of_bytes, char* file_name, int line_number, int thread)
 {
+
+    int thread_id = getCurrentTid();
 	if(!initialize)
 	{
 		my_malloc_init();
@@ -334,8 +340,9 @@ void* myallocate(int num_of_bytes, char* file_name, int line_number, int thread_
     
 }
 
-void mydeallocate(int thread_id, void* ptr)
+void mydeallocate(int thread, void* ptr)
 {
+    int thread_id = getCurrentTid();
     loadPage(thread_id, reverseLookup(ptr));
     ptr_header* temp = (ptr_header*)ptr - 1;
     temp->free = 1;
@@ -347,9 +354,8 @@ void protect_pages(int thread_id)
     {
         page_header *ptr = &((page_header*)memory_resource)[i];
         if (ptr -> thread_id == thread_id)
-            mprotect(startingAddressOfPages + i*page_size, page_size, PROT_READ | PROT_WRITE);    
+            mprotect(startingAddressOfPages + i*page_size, page_size, PROT_NONE);    
     }
-    printf("Protecting done");
 }
 
 void unprotect_pages(int thread_id)
@@ -358,32 +364,38 @@ void unprotect_pages(int thread_id)
     {
         page_header *ptr = &((page_header*)memory_resource)[i];
         if (ptr -> thread_id == thread_id)
-            mprotect(startingAddressOfPages + i*page_size, page_size, PROT_NONE);    
+            mprotect(startingAddressOfPages + i*page_size, page_size, PROT_READ | PROT_WRITE);    
     }
 }
 
 
 
-void* getPageLocation(int tid, int pageNo)
+int getPageLocation(int tid, int pageNo)
 {
-    int i;
-    for (i = 0; i < hddPageIndex; i++) 
+    for (int i = 0; i < hddPageIndex; i++) 
     {
         page_header* ptr = &((page_header*)memory_resource)[i];
         if(ptr->is_allocated && ptr->thread_id == tid && ptr->thread_page_num == pageNo)
         {
-            return startingAddressOfPages + i * page_size;
+            return i;
         }
     }
-    return getFreePageSlot();
+    return -1;
     // return NULL;
 }
 
 void handler(int sig, siginfo_t *si, void *unused)
 {
-    printf("HANDLER CALLED\n");
-	int thread_id = Gthread_id;
-	int frame = (int)(( (char*)si->si_addr - (memory_resource + pages_used_by_page_headers * page_size) )) / page_size;
+	int thread_id = getCurrentTid();
+    char* addressAccessed = si->si_addr;
+    int slotNumber = reverseLookup(addressAccessed);
+    mprotect(startingAddressOfPages + slotNumber * page_size, page_size, PROT_READ | PROT_WRITE);
+    int currentSlotNumber = getPageLocation(thread_id, slotNumber);
+    //printf("%d, %d, %d slots\n", thread_id, slotNumber, currentSlotNumber);
+    mprotect(startingAddressOfPages + slotNumber * page_size, page_size, PROT_READ | PROT_WRITE);    
+    swapPage(slotNumber, currentSlotNumber);
+    mprotect(startingAddressOfPages + currentSlotNumber * page_size, page_size, PROT_NONE);
+	/*int frame = (int)(( (char*)si->si_addr - (memory_resource + pages_used_by_page_headers * page_size) )) / page_size;
     
     int flag = 0;
     int i;
@@ -405,7 +417,7 @@ void handler(int sig, siginfo_t *si, void *unused)
         //printf("Got SIGSEGV at address: 0x%lx\n",(long) si->si_addr);
         exit(0);
     }
-    printf("YOO\n");
+    printf("YOO\n");*/
 }
 
 

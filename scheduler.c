@@ -76,12 +76,13 @@ void timeSliceExpired ()
 	// Do the swaping.
 	protect_pages(currentThread->tid);
 	unprotect_pages(nextThread->tid);
+	printf("%d, %d CONTEXT\n", currentThread->tid, nextThread->tid);
 	swapcontext(currentThread->context, nextThread->context);
 }
 
 void mySchedulerInit()
 {	
-	setTimer(&timeSliceExpired, 50);
+	setTimer(&timeSliceExpired, 500);
 	initMQ();
 }
 

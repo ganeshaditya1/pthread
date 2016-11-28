@@ -10,7 +10,12 @@ void* func(void * value)
 	int v = (int)value;
 	printf("Value Recieved2: %d\n", v);
 	//my_pthread_yield();
-	while(1){}
+	printf("%d getCurrentTid\n", getCurrentTid());
+	char *a = myallocate(400, 0, 0, 1);
+	a[2] = 'c';
+	while(1){
+		printf("%c THREAD: %d", a[2], getCurrentTid());
+	}
 		//printf("Thread 1 %d\n", getCurrentTid());
 	
 	
@@ -18,7 +23,12 @@ void* func(void * value)
 
 void* func2(void * value) 
 {
-	while(1){}
+	printf("%d getCurrentTid\n", getCurrentTid());
+	char *a = myallocate(400, 0, 0, 1);
+	a[2] = 'd';
+	while(1){
+		printf("%c THREAD: %d", a[2], getCurrentTid());
+	}
 		//printf("Thread 2 %d\n", getCurrentTid());
 	
 	
