@@ -82,7 +82,7 @@ void timeSliceExpired ()
 
 void mySchedulerInit()
 {	
-	setTimer(&timeSliceExpired, 500);
+	setTimer(&timeSliceExpired, 50);
 	initMQ();
 }
 

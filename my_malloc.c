@@ -77,6 +77,7 @@ void evictPage()
 		return;
 	}
 	fseek(swapFile, diskSlotNumber * page_size, SEEK_SET);
+    mprotect(startingAddressOfPages + slotNumber*page_size, page_size, PROT_READ | PROT_WRITE);
 	fwrite(startingAddressOfPages + page_size * slotNumber, 1, page_size, swapFile);
 	fseek(swapFile, 0, SEEK_SET);
 
@@ -100,6 +101,7 @@ int readPageFromDisk(int diskSlotNumber)
 		return -1;
 	}
 	fseek(swapFile, diskSlotNumber * page_size, SEEK_SET);
+    mprotect(startingAddressOfPages + slotNumber*page_size, page_size, PROT_READ | PROT_WRITE);
 	fread(startingAddressOfPages + page_size * slotNumber, 1, page_size, swapFile);
 	fseek(swapFile, 0, SEEK_SET);
 }
@@ -171,6 +173,7 @@ void loadPage(int tid, int pageNo)
         page_header* ptr = &((page_header*)memory_resource)[i];
         if(ptr->is_allocated && ptr->thread_id == tid && ptr->thread_page_num == pageNo)
         {
+            mprotect(startingAddressOfPages + i*page_size, page_size, PROT_READ | PROT_WRITE);
         	swapPage(i, pageNo);
             mprotect(startingAddressOfPages + i*page_size, page_size, PROT_NONE);
         	return;
@@ -182,6 +185,7 @@ void loadPage(int tid, int pageNo)
         if(ptr->is_allocated && ptr->thread_id == tid && ptr->thread_page_num == pageNo)
         {
         	int slotNumber = readPageFromDisk(i);
+            mprotect(startingAddressOfPages + slotNumber*page_size, page_size, PROT_READ | PROT_WRITE);
         	swapPage(slotNumber, pageNo);
             mprotect(startingAddressOfPages + slotNumber*page_size, page_size, PROT_NONE);
         	return;
@@ -194,9 +198,10 @@ void loadPage(int tid, int pageNo)
     	evictPage();
     	slotNumber = getFreePageSlot();
     }
-
+    mprotect(startingAddressOfPages + slotNumber*page_size, page_size, PROT_READ | PROT_WRITE);
     swapPage(slotNumber, pageNo);
-    mprotect(startingAddressOfPages + slotNumber*page_size, page_size, PROT_NONE);
+    if(slotNumber != pageNo)
+        mprotect(startingAddressOfPages + slotNumber*page_size, page_size, PROT_NONE);
     page_header* ptr = &((page_header*)memory_resource)[pageNo];
     ptr->is_allocated = 1;
     ptr->thread_id = tid;
@@ -251,6 +256,7 @@ int reverseLookup(char* obj)
 
 void* allocateMemory(int thread_id, ptr_header* temp, int currentPageIndex, int size)
 {
+
     char* currentPageEnd = startingAddressOfPages + (currentPageIndex + 1) * page_size;
     int sizeLeft = (int)(currentPageEnd - (char*)(temp + 1));
     int sizeRequired = size - sizeLeft + sizeof(ptr_header);
@@ -323,6 +329,7 @@ void* myallocate(int num_of_bytes, char* file_name, int line_number, int thread)
             int nextPageIndex = reverseLookup((char*)temp->next);
     		if(nextPageIndex != currentPageIndex)
     		{
+
                 loadPage(thread_id, nextPageIndex);
                 temp = temp->next;
                 currentPageIndex = nextPageIndex;
@@ -386,6 +393,7 @@ int getPageLocation(int tid, int pageNo)
 
 void handler(int sig, siginfo_t *si, void *unused)
 {
+
 	int thread_id = getCurrentTid();
     char* addressAccessed = si->si_addr;
     int slotNumber = reverseLookup(addressAccessed);

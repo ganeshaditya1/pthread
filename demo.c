@@ -14,7 +14,7 @@ void* func(void * value)
 	char *a = malloc(400);
 	a[2] = 'c';
 	while(1){
-		printf("%c THREAD: %d", a[2], getCurrentTid());
+		printf("%c THREAD: %d\n", a[2], getCurrentTid());
 	}	
 }
 
@@ -24,7 +24,7 @@ void* func2(void * value)
 	char *a = malloc(400);
 	a[2] = 'd';
 	while(1){
-		printf("%c THREAD: %d", a[2], getCurrentTid());
+		printf("%c THREAD: %d\n", a[2], getCurrentTid());
 	}	
 }
 
