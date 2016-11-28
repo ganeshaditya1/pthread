@@ -183,7 +183,6 @@ void loadPage(int tid, int pageNo)
         	return;
         }
     }
-    int i;
     for (i = hddPageIndex; i < num_of_pages; i++) 
     {
         page_header* ptr = &((page_header*)memory_resource)[i];
