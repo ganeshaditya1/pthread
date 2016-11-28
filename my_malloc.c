@@ -44,7 +44,8 @@ void handler(int sig, siginfo_t *si, void *unused);
 
 int getFreeDiskSlot()
 {
-	for (int i = num_of_pages; i < num_of_page_headers; i++) 
+    int i;
+	for (i = num_of_pages; i < num_of_page_headers; i++) 
     {
         page_header* ptr = &((page_header*)memory_resource)[i];
         if(!ptr->is_allocated)
@@ -57,7 +58,8 @@ int getFreeDiskSlot()
 
 int getFreePageSlot()
 {
-	for(int i = 0; i < num_of_pages; i++)
+    int i;
+	for(i = 0; i < num_of_pages; i++)
 	{
 		page_header* ptr = &((page_header*)memory_resource)[i];
         if(!ptr->is_allocated)
@@ -124,8 +126,8 @@ void my_malloc_init()
     startingAddressOfPages = memory_resource + (pages_used_by_page_headers * page_size);
     printf("page memory starts from %p\n", startingAddressOfPages);
 
-
-    for (int i = 0; i < num_of_page_headers; i++) 
+    int i;
+    for (i = 0; i < num_of_page_headers; i++) 
     {
         page_header* ptr = &((page_header*)memory_resource)[i];
         ptr->is_allocated = 0;
@@ -168,8 +170,8 @@ void loadPage(int tid, int pageNo)
     mprotect(startingAddressOfPages + pageNo*page_size, page_size, PROT_READ | PROT_WRITE);
     //protect_pages(tid);
 
-
-	for (int i = 0; i < hddPageIndex; i++) 
+    int i;
+	for (i = 0; i < hddPageIndex; i++) 
     {
         page_header* ptr = &((page_header*)memory_resource)[i];
         if(ptr->is_allocated && ptr->thread_id == tid && ptr->thread_page_num == pageNo)
@@ -181,7 +183,8 @@ void loadPage(int tid, int pageNo)
         	return;
         }
     }
-    for (int i = hddPageIndex; i < num_of_pages; i++) 
+    int i;
+    for (i = hddPageIndex; i < num_of_pages; i++) 
     {
         page_header* ptr = &((page_header*)memory_resource)[i];
         if(ptr->is_allocated && ptr->thread_id == tid && ptr->thread_page_num == pageNo)
@@ -221,7 +224,8 @@ void loadPage(int tid, int pageNo)
 
 boolean canSatisfyRequirement(int size)
 {
-	for (int i = 0; i < num_of_page_headers; i++) 
+    int i;
+	for (i = 0; i < num_of_page_headers; i++) 
     {
         page_header* ptr = &((page_header*)memory_resource)[i];
         if(!ptr->is_allocated)
@@ -266,7 +270,8 @@ void* allocateMemory(int thread_id, ptr_header* temp, int currentPageIndex, int 
     if(sizeRequired > 0)
     {    
         int numberOfPagesRequired = (int)ceil(sizeRequired/(double)4096);
-        for(int i = numberOfPagesRequired; i > 0; i--)
+        int i;
+        for(i = numberOfPagesRequired; i > 0; i--)
         {
             loadPage(thread_id, ++currentPageIndex);
             //currentPageIndex++;
@@ -360,7 +365,8 @@ void mydeallocate(void* ptr, char* file_name, int line_number, int ThreadReq)
 
 void protect_pages(int thread_id)
 {
-    for (int i = 0; i < hddPageIndex; i++)
+    int i;
+    for (i = 0; i < hddPageIndex; i++)
     {
         page_header *ptr = &((page_header*)memory_resource)[i];
         if (ptr -> thread_id == thread_id)
@@ -370,7 +376,8 @@ void protect_pages(int thread_id)
 
 void unprotect_pages(int thread_id)
 {
-    for (int i = 0; i < hddPageIndex; i++)
+    int i;
+    for (i = 0; i < hddPageIndex; i++)
     {
         page_header *ptr = &((page_header*)memory_resource)[i];
         if (ptr -> thread_id == thread_id)
@@ -382,7 +389,8 @@ void unprotect_pages(int thread_id)
 
 int getPageLocation(int tid, int pageNo)
 {
-    for (int i = 0; i < hddPageIndex; i++) 
+    int i;
+    for (i = 0; i < hddPageIndex; i++) 
     {
         page_header* ptr = &((page_header*)memory_resource)[i];
         if(ptr->is_allocated && ptr->thread_id == tid && ptr->thread_page_num == pageNo)
