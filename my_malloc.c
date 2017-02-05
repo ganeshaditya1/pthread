@@ -111,7 +111,10 @@ int readPageFromDisk(int diskSlotNumber)
 
 void my_malloc_init()
 {
-    num_of_page_headers = 3 * num_of_pages;
+	//this is because we are also storing the page headers for pages in the swapFile
+	//swapFile is double the size of the memory resource, 8MB, 16MB
+	//so the total number of pages is actually 3 times, hence the the number of headers
+    num_of_page_headers = 3 * num_of_pages; 
     page_headers_per_page = page_size / sizeof(page_header);
     printf("page headers per page: %d\n", page_headers_per_page);
     pages_used_by_page_headers = num_of_page_headers/page_headers_per_page;
