@@ -45,7 +45,9 @@ void handler(int sig, siginfo_t *si, void *unused);
 int getFreeDiskSlot()
 {
     int i;
-	for (i = num_of_pages; i < num_of_page_headers; i++) 
+	//the headers for the the pages in the swapFile 
+	//are present after the headers of all pages in the memory resource
+    for (i = num_of_pages; i < num_of_page_headers; i++) 
     {
         page_header* ptr = &((page_header*)memory_resource)[i];
         if(!ptr->is_allocated)
